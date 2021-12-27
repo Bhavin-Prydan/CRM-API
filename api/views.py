@@ -27,10 +27,13 @@ class EDetailApi(APIView):
 		tbl_Person = tblPerson.objects.filter(EntityIDF=tbl_entity).first()
 		if tbl_Person:
 			tbl_Person_serializer = tblPersonSerializer(tbl_Person)				
-			b = tbl_Person_serializer.data
-			res_data['Person'] = b
+			b1 = tbl_Person_serializer.data
 
-				
+			rtbl_Entity = rtblEntity.objects.get(PersonIDF=tbl_Person)
+			rtbl_Entity_Serializer = rtblEntitySerializer(rtbl_Entity) 	
+			b2 = rtbl_Entity_Serializer.data
+			res_data['Person'] = {**b1 ,**b2}
+
 		tbl_company = tblCompany.objects.filter(EntityIDF=tbl_entity).first()
 		if tbl_company:
 			tbl_Company_Serializer = tblCompanySerializer(tbl_company)	
@@ -85,33 +88,26 @@ class EDetailApi(APIView):
 		return Response(res_data)
 
 	def delete(self,request,pk,*args,**kwargs):
-		tblperson = tblPerson.objects.get(PersonID=pk)
-		tblphone = tblPhone.objects.get(PhoneID = tblperson.PhoneIDF.PhoneID).delete()
-		# print("phone deleted")
-		tblemail = tblEmail.objects.get(EmailID = tblperson.EmailIDF.EmailID).delete()
-		# print("email deleted")
-		tbladdress = tblAddress.objects.get(AddressID = tblperson.AddressIDF.AddressID).delete()
-		# print("address deleted")
-		tblcompany = tblCompany.objects.get(CompanyID=tblperson.CompanyIDF.CompanyID).delete()
-		# print("company deleted")
-		tblperson.delete()	
-		return Response()
+		tbl_entity = tblEntity.objects.get(EntityID=pk)
+		# print(tbl_entity)
+		tbl_entity.delete()	
+		return Response({'msg':'Data Deleted'})
 
 	def patch(self, request, pk, format=None):
-		tblperson = tblPerson.objects.get(PersonID=pk)
-		tblperson_serializer = tblPersonSerializer(tblperson,data = request.data,partial=True)
-		print(tblperson_serializer.is_valid())
-		if tblperson_serializer.is_valid():
-			tblperson_serializer.save()
-			print(tblperson_serializer.data)
-			return Response(tblperson_serializer.data)
-		return Response(tblperson_serializer.errors, status=status.HTTP_400_BAD_REQUEST)		
+		data = request.data
+		print(data)
+		tbl_entity = tblEntity.objects.get(EntityID=pk)
+		tbl_entity_serializer = tblEntitySerializer(tbl_entity,data=data['Entity'],partial=True)
+		if tbl_entity_serializer.is_valid:
+			tbl_entity_serializer.save()	
+			return Response({'msg':'Data Updated'})		
 
 
 class EntitySearchApi(generics.ListAPIView):
 	serializer_class = tblEntitySerializer
 	filter_backends = [SearchFilter]
-	search_fields = ['FullName', 'ShortName']	# filter_backends = (DjangoFilterBackend,)
+	search_fields = ['FullName', 'ShortName']
+	# filter_backends = (DjangoFilterBackend,)
 	# filter_fields = ('FullName', 'ShortName')
 		
 
@@ -273,8 +269,10 @@ class EntityDetailApi(APIView):
 		latest_entity = tblEntity.objects.last()
 
 
-		if(data['Photo']):		
-			tbl_Photo = tblPhoto(Photo = data['Photo'],EntityIDF=latest_entity).save() 
+		if(data['Photo']):
+			stbl_Photo_Type = stblPhotoType.objects.get(PhotoType=data['PhotoType'])
+
+			tbl_Photo = tblPhoto(Photo = data['Photo'],PhotoTypeIDF=stbl_Photo_Type,EntityIDF=latest_entity).save() 
 		
 		# for person
 		if data['FirstName']:
@@ -305,7 +303,7 @@ class EntityDetailApi(APIView):
 		Atype = stblAddressType.objects.get(AddressTypeID=data['AddressType'])
 		Address = tblAddress(Address=data['Address'],City=data['City'],District=data['District'],State=data['State'],Country=data['Country'],PinCode=data['PinCode'],AddressTypeIDF=Atype).save()
 		latest_Address = tblAddress.objects.last()
-		rtbl_entity_address = rtblEntityAddress(AddressIDF = latest_Address,EntityIDF=latest_entity) 
+		rtbl_entity_address = rtblEntityAddress(AddressIDF = latest_Address,EntityIDF=latest_entity).save() 
 		# print(latest_Address)
 
 		# for rtbl entity

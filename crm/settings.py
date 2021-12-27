@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     # 'accounts.apps.AccountsConfig',
     'drf_yasg',
     'drf_multiple_model',
+    'django_cleanup',
   
 
 ]

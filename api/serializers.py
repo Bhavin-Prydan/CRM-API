@@ -138,6 +138,7 @@ class stblPhotoTypeSerializer(serializers.ModelSerializer):
 		fields = '__all__'		
 
 class tblPhotoSerializer(serializers.ModelSerializer):
+	PhotoTypeIDF = stblPhotoTypeSerializer()
 	Photo = Base64ImageField(max_length=None, use_url=True, allow_null= True)
 	class Meta:
 		model = tblPhoto

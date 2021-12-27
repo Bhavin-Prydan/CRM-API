@@ -57,7 +57,7 @@ class tblEntity(models.Model):
 	FullName = models.CharField(max_length=256)	
 	ShortName = models.CharField(max_length=16)
 	EntityTypeIDF = models.ForeignKey('stblEntityType',on_delete=models.SET_NULL,null=True)	
-	CreatedAT = models.DateTimeField(auto_now_add=True)
+	CreatedAT = models.DateField(auto_now_add=True)
 	CreatedBY = models.ForeignKey(User,on_delete=models.SET_NULL,null=True)
 
 	def __str__(self):
@@ -132,7 +132,7 @@ class tblPhoto(models.Model):
 	Photo = models.ImageField(upload_to="images",default='Static/avatar.jpg')	
 	PhotoTypeIDF = models.ForeignKey('stblPhotoType',on_delete=models.SET_NULL,null=True)
 	# EntityTypeIDF = models.ForeignKey('stblEntityType',on_delete=models.SET_NULL,null=True)
-	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.SET_NULL,null=True)
+	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.CASCADE,null=True)
 	
 	def __str__(self):
 		return str(self.PhotoID)
@@ -185,8 +185,8 @@ class stblSuffixType(models.Model):
 
 class tblEntitySocialMedia(models.Model):
 	EntitySocialMediaID = models.AutoField(primary_key=True)
-	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.SET_NULL,null=True)
-	SocialMediaIDF = models.ForeignKey('tblSocialMedia',on_delete=models.SET_NULL,null=True)
+	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.CASCADE,null=True)
+	SocialMediaIDF = models.ForeignKey('tblSocialMedia',on_delete=models.CASCADE,null=True)
 	
 	def __str__(self):
 		return str(self.EntitySocialMediaID)														
@@ -209,8 +209,8 @@ class tblCompany(models.Model):
 	Founded = models.DateField()
 	Specialities = models.TextField()
 	AnnualRevenue = models.IntegerField()
-	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.SET_NULL,null=True)
-	HeadcountIDF = models.ForeignKey('tblHeadCount',on_delete=models.SET_NULL,null=True)
+	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.CASCADE,null=True)
+	HeadcountIDF = models.ForeignKey('tblHeadCount',on_delete=models.CASCADE,null=True)
 	CompanyTypeIDF = models.ForeignKey('stblCompanyType',on_delete=models.SET_NULL,null=True)
 	IndustryIDF = models.ForeignKey('stblIndustryType',on_delete=models.SET_NULL,null=True)
 
@@ -242,24 +242,24 @@ class tblPerson(models.Model):
 		
 class tblEntityPhone(models.Model):
 	EntityPhoneID = models.AutoField(primary_key=True)
-	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.SET_NULL,null=True)
-	PhoneIDF = models.ForeignKey('tblPhone',on_delete=models.SET_NULL,null=True)
+	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.CASCADE,null=True)
+	PhoneIDF = models.ForeignKey('tblPhone',on_delete=models.CASCADE,null=True)
 	
 	def __str__(self):
 		return str(self.EntityPhoneID)																
 
 class rtblEntityEmail(models.Model):
 	EntityEmailID = models.AutoField(primary_key=True)
-	EmailIDF = models.ForeignKey('tblEmail',on_delete=models.SET_NULL,null=True)
-	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.SET_NULL,null=True)
+	EmailIDF = models.ForeignKey('tblEmail',on_delete=models.CASCADE,null=True)
+	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.CASCADE,null=True)
 	
 	def __str__(self):
 		return str(self.EntityEmailID)	
 
 class rtblEntityAddress(models.Model):
 	EntityAddessID = models.AutoField(primary_key=True)
-	AddressIDF = models.ForeignKey('tblAddress',on_delete=models.SET_NULL,null=True)
-	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.SET_NULL,null=True)
+	AddressIDF = models.ForeignKey('tblAddress',on_delete=models.CASCADE,null=True)
+	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.CASCADE,null=True)
 	
 	def __str__(self):
 		return str(self.EntityEmailID)						
