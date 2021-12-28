@@ -97,10 +97,160 @@ class EDetailApi(APIView):
 		data = request.data
 		print(data)
 		tbl_entity = tblEntity.objects.get(EntityID=pk)
-		tbl_entity_serializer = tblEntitySerializer(tbl_entity,data=data['Entity'],partial=True)
-		if tbl_entity_serializer.is_valid:
-			tbl_entity_serializer.save()	
-			return Response({'msg':'Data Updated'})		
+		# for tblentity 
+		if data['FullName']:
+			tbl_entity.FullName = data['FullName']
+		if data['ShortName']:
+			tbl_entity.ShortName = data['ShortName']
+		if data['EntityType']:
+			sbl_entity_type = stblEntityType.objects.get(EntityTypeID=data['EntityType'])
+			tbl_entity.EntityTypeIDF = sbl_entity_type		
+		tbl_entity.save()
+
+		# for tblPerson
+		if tbl_entity.EntityTypeIDF == 1:
+			tbl_Person = tblPerson.objects.filter(EntityIDF=pk).first()
+			if data['FirstName']:
+				tbl_Person.FirstName = data['FirstName']
+			if data['MiddleName']:
+				tbl_Person.MiddleName = data['MiddleName']
+			if data['LastName']:
+				tbl_Person.LastName = data['LastName']
+			if data['Gender']:
+				tbl_Person.Gender = data['Gender']	
+			if data['DOB']:
+				tbl_Person.DOB = data['DOB']				
+			if data['SuffixType']:
+				Stype = stblSuffixType.objects.get(SuffixID=data['SuffixType'])
+				tbl_Person.SuffixTypeIDF = Stype				
+			if data['PersonType']:
+				Ptype = stblPersonType.objects.get(PersonTypeID=data['PersonType'])
+				tbl_Person.PersonTypeIDF = Ptype					
+			tbl_Person.save()
+
+			rtbl_Entity = rtblEntity.objects.filter(PersonIDF = tbl_Person).first()
+			if data['Designation']:
+				rtbl_Entity.Designation = data['Designation']
+				rtbl_Entity.save()					
+
+		# for tblCompany
+
+		tbl_Company = tblCompany.objects.filter(EntityIDF=pk).first()
+		rtbl_entity = rtblEntity.objects.filter(CompanyIDF = tbl_Company).first()
+		# print(rtbl_entity)
+		if tbl_Company:
+			if data['CompanyName']:
+				tbl_Company.CompanyName = data['CompanyName']	
+			if data['GSTINNo']:
+				tbl_Company.GSTINNo = data['GSTINNo']	
+			if data['Headquarter']:
+				tbl_Company.Headquarter = data['Headquarter']	
+			if data['WebsiteURL']:
+				tbl_Company.WebsiteURL = data['WebsiteURL']	
+			if data['About']:
+				tbl_Company.About = data['About']	
+			if data['Founded']:
+				tbl_Company.Founded = data['Founded']	
+			if data['Specialities']:
+				tbl_Company.Specialities = data['Specialities']
+			if data['AnnualRevenue']:
+				tbl_Company.AnnualRevenue = data['AnnualRevenue']	
+			# print(data['HeadCountID'])	
+			tbl_Head_Count = tblHeadCount.objects.filter(HeadCountID=data['HeadCountID']).first()
+			if data['HeadCountRange']:
+				tbl_Head_Count.HeadCountRange = data['HeadCountRange']
+			if data['HeadCountType']:
+				HeadCountType = stblHeadCountType.objects.get(HeadCountTypeID=data['HeadCountType'])		
+				tbl_Head_Count.HeadCountTypeIDF = HeadCountType
+			tbl_Head_Count.save()				
+			
+			if data['CompanyType']:
+				Company_Type = stblCompanyType.objects.get(CompanyTypeID=data['CompanyType'])
+				tbl_Company.CompanyTypeIDF = Company_Type
+			if data['IndustryType']:	
+				Industry_Type = stblIndustryType.objects.get(IndustryID=data['IndustryType'])
+				tbl_Company.IndustryIDF = Industry_Type
+
+			tbl_Company.save()
+
+		# for SocialMedia
+		tblEntity_SocialMedia = tblEntitySocialMedia.objects.filter(EntityIDF=pk).first()
+		if data['url']:
+			tbl_SocialMedia =  tblSocialMedia.objects.filter(SocialmediaID=data["SocialmediaID"]).first()
+			tbl_SocialMedia.url = data['url']
+		if data['SocialMediaType']:
+			sbl_social_type = stblSocialMediaType.objects.get(SocialMediaTypeID=data['SocialMediaType'])
+			tbl_SocialMedia.SocialMediaTypeIDF = sbl_social_type
+		tbl_SocialMedia.save()	
+		tblEntity_SocialMedia.save()	
+		
+		# for email
+		rtbl_entity_email = rtblEntityEmail.objects.filter(EntityIDF=pk).first()
+		if data['EmailAddress']:
+			Email = tblEmail.objects.filter(EmailID=data["EmailID"]).first()
+			Email.EmailAddress = data['EmailAddress']
+		if data['EmailType']:
+			Etype = stblEmailType.objects.get(EmailTypeID=data["EmailType"])
+			Email.EmailTypeIDF = Etype
+		Email.save()		
+		rtbl_entity_email.save()	
+
+		# for address
+		# rtbl_entity_address = rtblEntityAddress.objects.filter(EntityIDF=pk).first()
+		if data["Address"]:
+			tbl_Address = tblAddress.objects.filter(AddressID = data['AddressID']).first()
+			tbl_Address.Address = data["Address"]
+		if data["City"]:
+			tbl_Address.City = data["City"]
+		if data["District"]:
+			tbl_Address.District = data["District"]
+		if data["State"]:
+			tbl_Address.State = data["State"]
+		if data["PinCode"]:
+			tbl_Address.PinCode = data["PinCode"]
+		if data["Country"]:
+			tbl_Address.Country = data["Country"]
+		if data['AddressType']:
+			Atype = stblAddressType.objects.get(AddressTypeID=data['AddressType'])
+			tbl_Address.AddressTypeIDF = Atype	
+		tbl_Address.save()	
+		# rtbl_entity_address.save()
+		
+		# for Photo
+		tbl_Photo = tblPhoto.objects.filter(EntityIDF=pk).first()
+		print(type(data['Photo']))
+		if data['Photo'] == 'undefined':
+
+			# print('Khali 6')
+			pass
+		else:	
+			tbl_Photo.Photo = data['Photo']
+		if data['PhotoType']:	
+			stbl_Photo_Type = stblPhotoType.objects.get(PhotoTypeID=data['PhotoType'])
+			tbl_Photo.PhotoTypeIDF = stbl_Photo_Type
+		tbl_Photo.save()	
+
+		# for Phone number
+		# tbl_entity_phone = tblEntityPhone.objects.filter(EntityIDF=pk).first()
+		if data['PhoneNo']:
+			tbl_Phone = tblPhone.objects.filter(PhoneID=data['PhoneID']).first()
+			tbl_Phone.PhoneNo = data['PhoneNo']
+		if data['CountryCode']:
+			Ccode = tblCountryCode.objects.get(CountryCode=data['CountryCode'])
+			tbl_Phone.CodeIDF = Ccode
+		if data['PhoneType']:
+			Ptype = stblPhoneType.objects.get(PhoneTypeID=data['PhoneType'])
+			tbl_Phone.PhoneTypeIDF = Ptype 
+			 	
+		tbl_Phone.save()	
+		# tbl_entity_phone.save()
+		
+		# Ctype = stblCountryCodeType.objects.get(CountryCodeID=data['CountryName'])
+		# latest_Pnumber = tblPhone.objects.last()
+
+
+
+		return Response({'msg':'Data Updated'})		
 
 
 class EntitySearchApi(generics.ListAPIView):
@@ -205,31 +355,12 @@ class EntityDetailApi(APIView):
 	
 	latest_person = None
 	latest_Company = None
-	
-	filter_backends = [SearchFilter]
-	search_fields = ['FullName', 'ShortName']
-	# filter_backends = (DjangoFilterBackend,)
-	# filter_fields = ('FullName', 'ShortName')
-		
-
-	# def get_queryset(self):
-	# 	queryset = tblEntity.objects.filter(CreatedBY=request.user)
-	# 	search = self.request.query_params.get('FullName')
-	# 	print(search)	
-		# if username is not None:
-		#     queryset = queryset.filter(purchaser__username=username)
-		# return queryset
 
 	def get(self, request, format=None):
-		# queryset = tblEntity.objects.filter(CreatedBY=request.user)
-		# serializer_class = tblEntitySerializer
-		# filter_backends = [SearchFilter]
-		# search_fields = ['FullName', 'ShortName']
 
 		res_data = []
 		tbl_entity = tblEntity.objects.filter(CreatedBY=request.user)
 
-		# if req
 
 		for Entity in tbl_entity:
 
@@ -269,7 +400,7 @@ class EntityDetailApi(APIView):
 		latest_entity = tblEntity.objects.last()
 
 
-		if(data['Photo']):
+		if data['Photo']:
 			stbl_Photo_Type = stblPhotoType.objects.get(PhotoType=data['PhotoType'])
 
 			tbl_Photo = tblPhoto(Photo = data['Photo'],PhotoTypeIDF=stbl_Photo_Type,EntityIDF=latest_entity).save() 
@@ -304,7 +435,6 @@ class EntityDetailApi(APIView):
 		Address = tblAddress(Address=data['Address'],City=data['City'],District=data['District'],State=data['State'],Country=data['Country'],PinCode=data['PinCode'],AddressTypeIDF=Atype).save()
 		latest_Address = tblAddress.objects.last()
 		rtbl_entity_address = rtblEntityAddress(AddressIDF = latest_Address,EntityIDF=latest_entity).save() 
-		# print(latest_Address)
 
 		# for rtbl entity
 		rtbl_entity = rtblEntity(AddressIDF=latest_Address,EntityTypeIDF=sbl_entity_type)
