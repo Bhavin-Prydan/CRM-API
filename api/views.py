@@ -244,7 +244,7 @@ class EDetailApi(APIView):
 				pass
 			else:
 				entity_address.delete()
-				print('deleted')
+				# print('deleted')
 
 		for aid,at,add,ct,dt,st,cn,pc in zip(Aid,AType,Address,City,District,State,Country,PinCode) :
 
@@ -333,7 +333,7 @@ class EntitySearchApi(generics.ListAPIView):
 
 	def get_queryset(self):
 		search = self.request.query_params.get('search')
-		print(search)
+		# print(search)
 		queryset = None
 		if search == "":
 			# print("null")
@@ -349,9 +349,9 @@ class EntitySearchApi(generics.ListAPIView):
 		#get entity id from queryset
 		#call get in rtblphonenumber table by entity field for get phonenumber
 		for q in queryset:
-			print(q)
+			# print(q)
 			entity_phone_obj = tblEntityPhone.objects.filter(EntityIDF=q).first()
-			print(entity_phone_obj)
+			# print(entity_phone_obj)
 			#call get in rtblemail table by entity field for get emailid	
 			entity_email_obj = rtblEntityEmail.objects.filter(EntityIDF=q).first()
 			tbl_Photo = tblPhoto.objects.filter(EntityIDF=q).first()
@@ -428,7 +428,7 @@ class EntityDetailApi(APIView):
 	
 	def post(self,request,format=None):
 		data = request.data
-		print(data)
+		# print(data)
 
 
 		# for entity
@@ -532,6 +532,16 @@ class EntityDetailApi(APIView):
 		return Response({'msg':'Data Created'},status=status.HTTP_201_CREATED)
 
 
+	def delete(self,request,format=None):
+		data = request.data
+		# print(data)
+		for entity in data:
+			tbl_entity = tblEntity.objects.get(EntityID=entity)
+			# print(tbl_entity)
+			tbl_entity.delete()
+
+
+		return Response({'msg':'Data Deleted'})
 
 # for All static table 
 class StaticDataApi(ObjectMultipleModelAPIView):
