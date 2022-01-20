@@ -3,6 +3,7 @@ from django.utils.timezone import now
 from django.contrib.auth.models import User
 from datetime import date
 
+
 class stblCountryCodeType(models.Model):
 	CountryCodeID = models.AutoField(primary_key=True)
 	CountryName = models.CharField(max_length=30)
@@ -129,7 +130,7 @@ class stblPhotoType(models.Model):
 
 class tblPhoto(models.Model):
 	PhotoID = models.AutoField(primary_key=True)
-	Photo = models.ImageField(upload_to="images",default='Static/avatar.jpg')	
+	Photo = models.ImageField(upload_to="images",default='../Static/avatar.jpg')	
 	PhotoTypeIDF = models.ForeignKey('stblPhotoType',on_delete=models.SET_NULL,null=True)
 	# EntityTypeIDF = models.ForeignKey('stblEntityType',on_delete=models.SET_NULL,null=True)
 	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.CASCADE,null=True)
@@ -217,6 +218,44 @@ class tblCompany(models.Model):
 	def __str__(self):
 		return str(self.CompanyName)
 
+class tblDocument(models.Model):
+	DocumentID = models.AutoField(primary_key=True)
+	Document = models.FileField(upload_to ='Documents')
+	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.CASCADE,null=True)
+
+class stblStatus(models.Model):
+	StatusID = models.AutoField(primary_key=True)
+	Status = models.CharField(max_length=30)
+	
+	def __str__(self):
+		return str(self.Status)
+
+	class Meta:
+		verbose_name_plural = "stbl Status"		
+
+class tblEntityCallDetails(models.Model):
+	EntityCallDetailsID = models.AutoField(primary_key=True)
+	AboutCall = models.TextField(null=True,blank=True)
+	Date = models.DateTimeField()
+	CreatedAT = models.DateTimeField(auto_now_add=True)
+	CreatedBY = models.ForeignKey(User,on_delete=models.SET_NULL,null=True)
+	StatusIDF = models.ForeignKey('stblStatus',on_delete=models.SET_NULL,null=True)
+	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.CASCADE,null=True)
+
+	class Meta:
+		verbose_name_plural = "tbl Entity Call Details"	
+
+class stblSkill(models.Model):
+	SkillID = models.AutoField(primary_key=True)
+	Skill = models.CharField(max_length=30)
+	def __str__(self):
+		return str(self.Skill)
+
+class tblEntitySkill(models.Model):
+	EntitySkillID = models.AutoField(primary_key=True)
+	SkillIDF = models.ForeignKey('stblSkill',on_delete=models.SET_NULL,null=True)
+	EntityIDF = models.ForeignKey('tblEntity',on_delete=models.CASCADE,null=True)
+
 class tblPerson(models.Model):
 	PersonID = models.AutoField(primary_key=True)
 	FirstName = models.CharField(max_length=30)
@@ -233,7 +272,10 @@ class tblPerson(models.Model):
 	# CompanyIDF = models.ForeignKey('tblCompany',on_delete=models.SET_NULL,null=True)
 	# CreatedAT = models.DateTimeField(auto_now_add=True)
 	# CreatedBY = models.ForeignKey(User,on_delete=models.SET_NULL,null=True)
-
+	Experiance = models.CharField(max_length=30)
+	AboutPerson = models.TextField(null=True,blank=True)
+	StatusIDF = models.ForeignKey('stblStatus',on_delete=models.SET_NULL,null=True)
+	UpdatedBy = models.ForeignKey(User,on_delete=models.SET_NULL,null=True)
 	def __str__(self):
 		return self.MiddleName																
 

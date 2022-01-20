@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.filters import SearchFilter,OrderingFilter
-from .models import stblCountryCodeType,stblPhoneType,tblCountryCode,tblPhone,stblEntityType,tblEntity,stblAddressType,tblAddress,stblHeadCountType,tblHeadCount,stblEmailType,tblEmail,stblPhotoType,tblPhoto,stblSocialMediaType,tblSocialMedia,stblCompanyType,stblIndustryType,stblSuffixType,stblSocialMediaType,tblSocialMedia,stblCompanyType,stblIndustryType,stblSuffixType,tblEntitySocialMedia,stblPersonType,tblPerson,tblCompany,tblEntityPhone,rtblEntityEmail,rtblEntity,rtblEntityAddress
-from .serializers import stblCountryCodeTypeSerializer,stblPhoneTypeSerializer,tblCountryCodeSerializer,tblPhoneSerializer,stblEntityTypeSerializer,tblEntitySerializer,stblAddressTypeSerializer,tblAddressSerializer,stblHeadCountTypeSerializer,tblHeadCountSerializer,stblEmailTypeSerializer,tblEmailSerializer,stblPhotoTypeSerializer,tblPhotoSerializer,stblSocialMediaTypeSerializer,tblSocialMediaSerializer,stblCompanyTypeSerializer,stblIndustryTypeSerializer,stblSuffixTypeSerializer,tblEntitySocialMediaSerializer,stblPersonTypeSerializer,tblPersonSerializer,tblCompanySerializer,tblEntityPhoneSerializer,rtblEntityEmailSerializer,rtblEntitySerializer,UserSerializer,rtblEntityAddressSerializer
+from .models import stblCountryCodeType,stblPhoneType,tblCountryCode,tblPhone,stblEntityType,tblEntity,stblAddressType,tblAddress,stblHeadCountType,tblHeadCount,stblEmailType,tblEmail,stblPhotoType,tblPhoto,stblSocialMediaType,tblSocialMedia,stblCompanyType,stblIndustryType,stblSuffixType,stblSocialMediaType,tblSocialMedia,stblCompanyType,stblIndustryType,stblSuffixType,tblEntitySocialMedia,stblPersonType,tblPerson,tblCompany,tblEntityPhone,rtblEntityEmail,rtblEntity,rtblEntityAddress,tblDocument,stblStatus,tblEntityCallDetails,stblSkill,tblEntitySkill
+from .serializers import stblCountryCodeTypeSerializer,stblPhoneTypeSerializer,tblCountryCodeSerializer,tblPhoneSerializer,stblEntityTypeSerializer,tblEntitySerializer,stblAddressTypeSerializer,tblAddressSerializer,stblHeadCountTypeSerializer,tblHeadCountSerializer,stblEmailTypeSerializer,tblEmailSerializer,stblPhotoTypeSerializer,tblPhotoSerializer,stblSocialMediaTypeSerializer,tblSocialMediaSerializer,stblCompanyTypeSerializer,stblIndustryTypeSerializer,stblSuffixTypeSerializer,tblEntitySocialMediaSerializer,stblPersonTypeSerializer,tblPersonSerializer,tblCompanySerializer,tblEntityPhoneSerializer,rtblEntityEmailSerializer,rtblEntitySerializer,UserSerializer,rtblEntityAddressSerializer,tblDocumentSerializer,stblStatusSerializer,tblEntityCallDetailsSerializer,stblSkillSerializer,tblEntitySkillSerializer
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
@@ -13,8 +13,51 @@ from drf_multiple_model.views import ObjectMultipleModelAPIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics
 import json
-import itertools
-from collections.abc import Iterable
+import datetime
+# import itertools
+# from collections.abc import Iterable
+from django.utils.datastructures import MultiValueDictKeyError
+
+class tblDocumentViewSet(APIView):
+	def get(self,request,pk,*args, **kwargs):
+		docs = tblDocument.objects.filter(EntityIDF=pk).first()
+		serializer_doc = tblDocumentSerializer(docs,context={"request": request})	
+		return Response(serializer_doc.data)	
+
+
+class CallDetailsViewSet(APIView):
+	def get(self,request,pk,*args, **kwargs):
+		res_data = []
+		tbl_entity = tblEntity.objects.get(EntityID=pk)
+		tblEntity_CallDetails = tblEntityCallDetails.objects.filter(EntityIDF=tbl_entity).order_by('-EntityCallDetailsID')
+		if tblEntity_CallDetails:
+			for Ecall in tblEntity_CallDetails:
+				CallDetails_Serializer = tblEntityCallDetailsSerializer(Ecall)
+				res_data.append(CallDetails_Serializer.data)
+		# print(res_data)		
+		return Response(res_data)	
+
+	def delete(self,request,pk,*args, **kwargs):
+		tblEntity_CallDetails = tblEntityCallDetails.objects.get(EntityCallDetailsID=pk).delete()
+		return Response({'msg':'Data Deleted'})	
+		
+class tblEntityCallDetailsViewSet(APIView):
+	
+	def post(self,request,format=None):
+		data = request.data
+		print(data)
+		tbl_entity = tblEntity.objects.get(EntityID=data['EntityID'])
+		S = stblStatus.objects.get(Status=data['Status'])
+		tblEntity_CallDetails = tblEntityCallDetails(AboutCall=data['AboutCall'],Date=data['date'],CreatedBY=request.user,StatusIDF=S,EntityIDF=tbl_entity)
+		tblEntity_CallDetails.save()
+
+		tbl_person = tblPerson.objects.get(EntityIDF=tbl_entity)
+		print(tbl_person)
+		tbl_person.StatusIDF = S
+		tbl_person.UpdatedBy = request.user
+		tbl_person.save()
+
+		return Response({'msg':'Data Created'})
 
 class EDetailApi(APIView):
 	def get(self,request,pk,*args, **kwargs):
@@ -30,10 +73,21 @@ class EDetailApi(APIView):
 			tbl_Person_serializer = tblPersonSerializer(tbl_Person)				
 			b1 = tbl_Person_serializer.data
 
-			rtbl_Entity = rtblEntity.objects.get(PersonIDF=tbl_Person)
+			rtbl_Entity = rtblEntity.objects.filter(PersonIDF=tbl_Person).first()
+			# if rtbl_Entity :
 			rtbl_Entity_Serializer = rtblEntitySerializer(rtbl_Entity) 	
-			b2 = rtbl_Entity_Serializer.data
+			b2 = rtbl_Entity_Serializer.data			
 			res_data['Person'] = {**b1 ,**b2}
+
+			# res_data['Person'].update(skills_) 
+		tbl_Entity_Skill = tblEntitySkill.objects.filter(EntityIDF=tbl_entity)
+		skills_ = []
+		if tbl_Entity_Skill:
+			for s in tbl_Entity_Skill:
+				tblEntity_Skill_Serializer = tblEntitySkillSerializer(s)  
+				sd = tblEntity_Skill_Serializer.data
+				skills_.append(sd)
+			res_data['Skill'] = skills_
 
 		tbl_company = tblCompany.objects.filter(EntityIDF=tbl_entity).first()
 		if tbl_company:
@@ -43,7 +97,7 @@ class EDetailApi(APIView):
 		
 		tbl_Photo = tblPhoto.objects.filter(EntityIDF=tbl_entity).first()
 		if tbl_Photo:
-			tbl_Photo_Serializer = tblPhotoSerializer(tbl_Photo)	
+			tbl_Photo_Serializer = tblPhotoSerializer(tbl_Photo,context={"request": request})	
 			h = tbl_Photo_Serializer.data
 			res_data['Photo'] = h
 			
@@ -97,6 +151,25 @@ class EDetailApi(APIView):
 	def patch(self, request, pk, format=None):
 		data = request.data
 		# print(data)
+				# for document
+		if data['Document'] != 'undefined' and data['Document'] != '':
+			# print(data['Document'])
+			tbl_Document = tblDocument.objects.get(EntityIDF=pk)
+			tbl_Document.Document = data['Document']
+			tbl_Document.save()	
+		try:
+			PhotoType = data['PhotoType']
+		except MultiValueDictKeyError:
+			PhotoType = None
+		try:
+			AddressType = data['AddressType']
+		except MultiValueDictKeyError:			
+			AddressType = None
+		try:
+			SocialMediaType = data['SocialMediaType']
+		except MultiValueDictKeyError:			
+			SocialMediaType = None
+
 		tbl_entity = tblEntity.objects.get(EntityID=pk)
 		latest_entity = tblEntity.objects.last()
 		# for tblentity 
@@ -110,8 +183,10 @@ class EDetailApi(APIView):
 		tbl_entity.save()
 
 		# # for tblPerson
-		if tbl_entity.EntityTypeIDF == 1:
-			tbl_Person = tblPerson.objects.filter(EntityIDF=pk).first()
+		# print(tbl_entity.EntityTypeIDF)
+		if tbl_entity.EntityTypeIDF.EntityTypeID == 1:
+
+			tbl_Person = tblPerson.objects.get(EntityIDF=pk)
 			if data['FirstName']:
 				tbl_Person.FirstName = data['FirstName']
 			if data['MiddleName']:
@@ -121,19 +196,64 @@ class EDetailApi(APIView):
 			if data['Gender']:
 				tbl_Person.Gender = data['Gender']	
 			if data['DOB']:
-				tbl_Person.DOB = data['DOB']				
+				tbl_Person.DOB = data['DOB']	
+			if data['Experiance']:
+				tbl_Person.Experiance = data['Experiance']
+			if data['AboutPerson'] :
+				tbl_Person.AboutPerson = data['AboutPerson']						
+			if data['Status']:
+				S = stblStatus.objects.get(Status=data['Status'])
+				if tbl_Person.StatusIDF == S:
+					pass
+				else:
+					tbl_Person.StatusIDF = S
+					tblEntity_CallDetails = tblEntityCallDetails(AboutCall='Update Status',Date=(datetime.datetime.now()).strftime("%Y-%m-%d %H:%M:%S"),CreatedBY=request.user,StatusIDF=S,EntityIDF=tbl_entity)
+					tblEntity_CallDetails.save()
+					tbl_Person.UpdatedBy = request.user
 			if data['SuffixType']:
 				Stype = stblSuffixType.objects.get(SuffixID=data['SuffixType'])
 				tbl_Person.SuffixTypeIDF = Stype				
 			if data['PersonType']:
 				Ptype = stblPersonType.objects.get(PersonTypeID=data['PersonType'])
-				tbl_Person.PersonTypeIDF = Ptype					
+				tbl_Person.PersonTypeIDF = Ptype
+
 			tbl_Person.save()
+
+			if data['Skill'] :
+				skills = tuple(map(str, data['Skill'].split(',')))
+				tblEntity_Skills = tblEntitySkill.objects.filter(EntityIDF=pk)
+
+				for tblEntity_Skill in tblEntity_Skills:
+					if tblEntity_Skill.SkillIDF.Skill in skills:
+						pass
+					else:	
+						tblEntity_Skill.delete()
+
+				for s in skills:
+				# print(s)
+					Skills_ = stblSkill.objects.filter(Skill=s).first()
+					if Skills_ :
+						tblSkill = tblEntitySkill.objects.filter(EntityIDF=pk,SkillIDF=Skills_).first()
+						if tblSkill:
+							tblSkill.SkillIDF = Skills_
+							tblSkill.save()
+						else:
+							tbl_Entity_Skill = tblEntitySkill(SkillIDF=Skills_,EntityIDF=tbl_entity).save()
+								
+					else:
+						if s != '' and s != "other":
+							sk = stblSkill(Skill=s).save()
+							sk_letest = stblSkill.objects.last()
+							tbl_Entity_Skill = tblEntitySkill(SkillIDF=sk_letest,EntityIDF=tbl_entity).save()
+
 
 			rtbl_Entity = rtblEntity.objects.filter(PersonIDF = tbl_Person).first()
 			if data['Designation']:
 				rtbl_Entity.Designation = data['Designation']
 				rtbl_Entity.save()					
+			else:
+				rtbl_Entity.Designation = None
+				rtbl_Entity.save()						
 
 		# # for tblCompany
 		tbl_Company = tblCompany.objects.filter(EntityIDF=pk).first()
@@ -172,36 +292,39 @@ class EDetailApi(APIView):
 			if data['IndustryType']:	
 				Industry_Type = stblIndustryType.objects.get(IndustryID=data['IndustryType'])
 				tbl_Company.IndustryIDF = Industry_Type
-
 			tbl_Company.save()
 
-		# # for SocialMedia
-		Sid = tuple(map(int, data['SocialmediaID'].split(',')))
-		Stype = tuple(map(int, data['SocialMediaType'].split(',')))
-		Surl = tuple(map(str, data['url'].split(',')))
-		tblEntity_SocialMedia = tblEntitySocialMedia.objects.filter(EntityIDF=pk)
-		for entity_SocialMedia in tblEntity_SocialMedia:
-			if entity_SocialMedia.SocialMediaIDF.SocialmediaID in Sid:
-				pass
-			else:	
-				entity_SocialMedia.delete()
 
-		for sId,sType,sUrl in zip(Sid,Stype,Surl):
-			if sId != 0:
-				tbl_SocialMedia =  tblSocialMedia.objects.filter(SocialmediaID=sId).first()
-				tbl_SocialMedia.url = sUrl
-				sbl_social_type = stblSocialMediaType.objects.get(SocialMediaTypeID=sType)
-				tbl_SocialMedia.SocialMediaTypeIDF = sbl_social_type
-				tbl_SocialMedia.save()	
-			else :
-				sbl_social_type = stblSocialMediaType.objects.get(SocialMediaTypeID=sType)
-				tbl_social = tblSocialMedia(url=sUrl,SocialMediaTypeIDF=sbl_social_type).save()
-				latest_social = tblSocialMedia.objects.last()
-				tbl_entity_social = tblEntitySocialMedia(EntityIDF=tbl_entity,SocialMediaIDF=latest_social).save()
+
+		# # for SocialMedia
+		if SocialMediaType != None:
+
+			Sid = tuple(map(int, data['SocialmediaID'].split(',')))
+			Stype = tuple(map(int, data['SocialMediaType'].split(',')))
+			Surl = tuple(map(str, data['url'].split(',')))
+			tblEntity_SocialMedia = tblEntitySocialMedia.objects.filter(EntityIDF=pk)
+			for entity_SocialMedia in tblEntity_SocialMedia:
+				if entity_SocialMedia.SocialMediaIDF.SocialmediaID in Sid:
+					pass
+				else:	
+					entity_SocialMedia.delete()
+
+			for sId,sType,sUrl in zip(Sid,Stype,Surl):
+				if sId != 0:
+					tbl_SocialMedia =  tblSocialMedia.objects.filter(SocialmediaID=sId).first()
+					tbl_SocialMedia.url = sUrl
+					sbl_social_type = stblSocialMediaType.objects.get(SocialMediaTypeID=sType)
+					tbl_SocialMedia.SocialMediaTypeIDF = sbl_social_type
+					tbl_SocialMedia.save()	
+				else :
+					sbl_social_type = stblSocialMediaType.objects.get(SocialMediaTypeID=sType)
+					tbl_social = tblSocialMedia(url=sUrl,SocialMediaTypeIDF=sbl_social_type).save()
+					latest_social = tblSocialMedia.objects.last()
+					tbl_entity_social = tblEntitySocialMedia(EntityIDF=tbl_entity,SocialMediaIDF=latest_social).save()
 
 
 		
-		# # for email
+		# for email
 		eID = tuple(map(int, data['EmailID'].split(',')))
 		eType = tuple(map(int, data['EmailType'].split(',')))
 		eName = tuple(map(str, data['EmailAddress'].split(',')))
@@ -227,56 +350,65 @@ class EDetailApi(APIView):
 				rtbl_entity_email = rtblEntityEmail(EmailIDF=latest_Email,EntityIDF=tbl_entity).save()	
 
 
-		# # for address
+		# for address
+		if AddressType != None :	
+			Aid = tuple(map(int, data['AddressID'].split(',')))
+			AType = tuple(map(int, data['AddressType'].split(',')))
+			Address = tuple(map(str, data['Address'].split(',')))
+			City = tuple(map(str, data['City'].split(',')))
+			District = tuple(map(str, data['District'].split(',')))
+			State = tuple(map(str, data['State'].split(',')))
+			Country = tuple(map(str, data['Country'].split(',')))
+			PinCode = tuple(map(int, data['PinCode'].split(',')))
+			
+			rtbl_entity_address = rtblEntityAddress.objects.filter(EntityIDF=pk)
+			for entity_address in rtbl_entity_address:
+				if entity_address.AddressIDF.AddressID in Aid:
+					pass
+				else:
+					entity_address.delete()
+			 		# print('deleted')
 
-		Aid = tuple(map(int, data['AddressID'].split(',')))
-		AType = tuple(map(int, data['AddressType'].split(',')))
-		Address = tuple(map(str, data['Address'].split(',')))
-		City = tuple(map(str, data['City'].split(',')))
-		District = tuple(map(str, data['District'].split(',')))
-		State = tuple(map(str, data['State'].split(',')))
-		Country = tuple(map(str, data['Country'].split(',')))
-		PinCode = tuple(map(int, data['PinCode'].split(',')))
-		
-		rtbl_entity_address = rtblEntityAddress.objects.filter(EntityIDF=pk)
-		for entity_address in rtbl_entity_address:
-			if entity_address.AddressIDF.AddressID in Aid:
-				pass
-			else:
-				entity_address.delete()
-				# print('deleted')
+			for aid,at,add,ct,dt,st,cn,pc in zip(Aid,AType,Address,City,District,State,Country,PinCode) :
 
-		for aid,at,add,ct,dt,st,cn,pc in zip(Aid,AType,Address,City,District,State,Country,PinCode) :
-
-			if aid != 0:
-				tbl_Address = tblAddress.objects.get(AddressID = aid)
-				tbl_Address.Address = add
-				tbl_Address.City = ct
-				tbl_Address.District = dt
-				tbl_Address.State = st
-				tbl_Address.PinCode = pc
-				tbl_Address.Country = cn
-				Atype = stblAddressType.objects.get(AddressTypeID=at)
-				tbl_Address.AddressTypeIDF = Atype
-				tbl_Address.save()
-			else :
-				Atype = stblAddressType.objects.get(AddressTypeID=at)
-				Address = tblAddress(Address=add,City=ct,District=dt,State=st,Country=ct,PinCode=pc,AddressTypeIDF=Atype).save()
-				latest_Address = tblAddress.objects.last()
-				rtbl_entity_address = rtblEntityAddress(AddressIDF = latest_Address,EntityIDF=tbl_entity).save() 
+				if aid != 0:
+					tbl_Address = tblAddress.objects.get(AddressID = aid)
+					tbl_Address.Address = add
+					tbl_Address.City = ct
+					tbl_Address.District = dt
+					tbl_Address.State = st
+					tbl_Address.PinCode = pc
+					tbl_Address.Country = cn
+					Atype = stblAddressType.objects.get(AddressTypeID=at)
+					tbl_Address.AddressTypeIDF = Atype
+					tbl_Address.save()
+				else :
+					Atype = stblAddressType.objects.get(AddressTypeID=at)
+					Address = tblAddress(Address=add,City=ct,District=dt,State=st,Country=ct,PinCode=pc,AddressTypeIDF=Atype).save()
+					latest_Address = tblAddress.objects.last()
+					rtbl_entity_address = rtblEntityAddress(AddressIDF = latest_Address,EntityIDF=tbl_entity).save() 
 
 					
 		
 		# # for Photo
-		tbl_Photo = tblPhoto.objects.filter(EntityIDF=pk).first()
-		if data['Photo'] == 'undefined':
-			pass
-		else:	
-			tbl_Photo.Photo = data['Photo']
-		if data['PhotoType']:	
-			stbl_Photo_Type = stblPhotoType.objects.get(PhotoTypeID=data['PhotoType'])
-			tbl_Photo.PhotoTypeIDF = stbl_Photo_Type
-		tbl_Photo.save()	
+		if PhotoType != None:
+			tbl_Photo = tblPhoto.objects.filter(EntityIDF=pk).first()
+			if tbl_Photo:
+				if data['Photo'] == 'undefined':
+					pass
+				else:	
+					tbl_Photo.Photo = data['Photo']
+				if data['PhotoType']:	
+					stbl_Photo_Type = stblPhotoType.objects.get(PhotoTypeID=data['PhotoType'])
+					tbl_Photo.PhotoTypeIDF = stbl_Photo_Type
+
+					tbl_Photo.save()
+			else:
+
+				stbl_Photo_Type = stblPhotoType.objects.get(PhotoTypeID=data['PhotoType'])
+				tbl_Photo = tblPhoto(Photo = data['Photo'],PhotoTypeIDF=stbl_Photo_Type,EntityIDF=tbl_entity).save() 
+			
+	
 
 		# for Phone number
 		# print(data['PhoneID'])
@@ -337,13 +469,14 @@ class EntitySearchApi(generics.ListAPIView):
 		queryset = None
 		if search == "":
 			# print("null")
-			queryset = tblEntity.objects.filter(CreatedBY=self.request.user)
+			queryset = tblEntity.objects.all()
 		else : 
-			queryset = tblEntity.objects.filter(Q(CreatedBY=self.request.user),Q(FullName__icontains=search)|Q(ShortName__icontains=search))
+			queryset = tblEntity.objects.filter(Q(FullName__icontains=search)|Q(ShortName__icontains=search))
 
 		final_phone_queryset = []
 		final_email_queryset = []	
 		final_photo_queryset = []	
+		final_person_queryset = []	
 
 		
 		#get entity id from queryset
@@ -355,21 +488,25 @@ class EntitySearchApi(generics.ListAPIView):
 			#call get in rtblemail table by entity field for get emailid	
 			entity_email_obj = rtblEntityEmail.objects.filter(EntityIDF=q).first()
 			tbl_Photo = tblPhoto.objects.filter(EntityIDF=q).first()
+			tbl_Person = tblPerson.objects.filter(EntityIDF=q).first()
+			
 			final_phone_queryset.append(entity_phone_obj)
 			final_email_queryset.append(entity_email_obj)
 			final_photo_queryset.append(tbl_Photo)
+			final_person_queryset.append(tbl_Person)
 
 		if queryset is None:
 			queryset = None
 			final_phone_queryset = None
 			final_email_queryset = None
 			final_photo_queryset = None
+			final_person_queryset = None
 
-		return queryset, final_phone_queryset, final_email_queryset,final_photo_queryset
+		return queryset, final_phone_queryset, final_email_queryset,final_photo_queryset,final_person_queryset
 
 	def get(self,request):
 		entity_dict = {}
-		queryset, final_phone_queryset,final_email_queryset,final_photo_queryset = self.get_queryset()
+		queryset, final_phone_queryset,final_email_queryset,final_photo_queryset,final_person_queryset = self.get_queryset()
 		data = []
 		if queryset:
 			for i in range(len(queryset)):
@@ -381,7 +518,8 @@ class EntitySearchApi(generics.ListAPIView):
 				entity_dict.update({
 				'Phone' : tblEntityPhoneSerializer(final_phone_queryset[i]).data,
 				'Email' : rtblEntityEmailSerializer(final_email_queryset[i]).data,
-				'Photo' : tblPhotoSerializer(final_photo_queryset[i]).data
+				'Photo' : tblPhotoSerializer(final_photo_queryset[i],context={"request": request}).data,
+				'Person' : tblPersonSerializer(final_person_queryset[i]).data 
 				})
 					
 				data.append(entity_dict)
@@ -390,14 +528,12 @@ class EntitySearchApi(generics.ListAPIView):
 
 
 class EntityDetailApi(APIView):
-	
 	latest_person = None
 	latest_Company = None
 
 	def get(self, request, format=None):
-
 		res_data = []
-		tbl_entity = tblEntity.objects.filter(CreatedBY=request.user)
+		tbl_entity = tblEntity.objects.all()
 
 
 		for Entity in tbl_entity:
@@ -412,8 +548,13 @@ class EntityDetailApi(APIView):
 			rtbl_Entity_Email_Serializer = rtblEntityEmailSerializer(rtbl_Entity_Email)
 
 			tbl_Photo = tblPhoto.objects.filter(EntityIDF=Entity.EntityID).first()
-			tbl_Photo_Serializer = tblPhotoSerializer(tbl_Photo)	
+			tbl_Photo_Serializer = tblPhotoSerializer(tbl_Photo,context={"request": request})	
 			
+			# print(Entity.EntityID)
+			tbl_Person = tblPerson.objects.filter(EntityIDF=Entity.EntityID).first()
+			tbl_Person_serializer = tblPersonSerializer(tbl_Person)				
+			i = tbl_Person_serializer.data
+
 			h = tbl_Photo_Serializer.data
 
 			a = tbl_entity_serializer.data
@@ -421,7 +562,7 @@ class EntityDetailApi(APIView):
 			c = rtbl_Entity_Email_Serializer.data
 
 
-			z = {**a,**b,**c,**h}
+			z = {**a,**b,**c,**h,**i}
 			# print(z)
 			res_data.append(z)
 		return Response(res_data)
@@ -429,14 +570,30 @@ class EntityDetailApi(APIView):
 	def post(self,request,format=None):
 		data = request.data
 		# print(data)
-
+		try:
+			PhotoType = data['PhotoType']
+		except MultiValueDictKeyError:
+			PhotoType = None
+		try:
+			AddressType = data['AddressType']
+		except MultiValueDictKeyError:			
+			AddressType = None
+		try:
+			SocialMediaType = data['SocialMediaType']
+		except MultiValueDictKeyError:			
+			SocialMediaType = None
 
 		# for entity
 		sbl_entity_type = stblEntityType.objects.get(EntityTypeID=data['EntityType'])
 		tbl_entity = tblEntity(FullName=data['FullName'],ShortName=data['ShortName'],EntityTypeIDF=sbl_entity_type,CreatedBY=request.user).save()
 		latest_entity = tblEntity.objects.last()
 
-		# for Phone
+		# for document
+		if data['Document'] != 'undefined' or data['Document'] != '':
+			tbl_Document = tblDocument(EntityIDF=latest_entity,Document=data['Document'])
+			tbl_Document.save()
+
+		# # for Phone
 		No =  tuple(map(str, data['PhoneNo'].split(',')))
 		Type = tuple(map(int, data['PhoneType'].split(',')))
 		Code = tuple(map(int, data['CountryCode'].split(',')))
@@ -448,7 +605,7 @@ class EntityDetailApi(APIView):
 			tbl_entity_phone = tblEntityPhone(EntityIDF=latest_entity,PhoneIDF=latest_Pnumber).save()
 
 
-		# for Email		
+		# # # for Email		
 		eType = tuple(map(int, data['EmailType'].split(',')))
 		eName = tuple(map(str, data['EmailAddress'].split(',')))
 
@@ -459,22 +616,38 @@ class EntityDetailApi(APIView):
 			rtbl_entity_email = rtblEntityEmail(EmailIDF=latest_Email,EntityIDF=latest_entity).save()
 		
 
-		if data['Photo']:
+		if PhotoType != None:
 			# print(data['PhotoType'])
 			stbl_Photo_Type = stblPhotoType.objects.get(PhotoTypeID=data['PhotoType'])
-
+			
 			tbl_Photo = tblPhoto(Photo = data['Photo'],PhotoTypeIDF=stbl_Photo_Type,EntityIDF=latest_entity).save() 
-		
-		# for person
+			
+		# # # for person
 		if data['FirstName']:
 			Stype = stblSuffixType.objects.get(SuffixID=data['SuffixType'])
 			PersonType = stblPersonType.objects.get(PersonTypeID=data['PersonType'])
+			status_ = stblStatus.objects.get(Status=data['Status'])
 
-			tblperson = tblPerson(FirstName = data["FirstName"],MiddleName=data["MiddleName"],LastName = data["LastName"],Gender=data["Gender"],DOB=data["DOB"],SuffixIDF=Stype,PersonTypeIDF= PersonType,EntityIDF=latest_entity)
+			tblperson = tblPerson(FirstName = data["FirstName"],MiddleName=data["MiddleName"],LastName = data["LastName"],Gender=data["Gender"],DOB=data["DOB"],SuffixIDF=Stype,PersonTypeIDF= PersonType,Experiance=data['Experiance'],StatusIDF=status_,EntityIDF=latest_entity)
+			if data['AboutPerson'] :
+				tblperson.AboutPerson = data['AboutPerson']
 			tblperson.save()
 			global latest_person 
 			latest_person = tblPerson.objects.last()
-			
+		
+		if data['Skill'] :
+			skills = tuple(map(str, data['Skill'].split(',')))
+			for s in skills:
+				# print(s)
+				Skills_ = stblSkill.objects.filter(Skill=s).first()
+				if Skills_ :
+					tbl_Entity_Skill = tblEntitySkill(SkillIDF=Skills_,EntityIDF=latest_entity).save()
+				else:
+					if s != '' and s != "other":
+						sk = stblSkill(Skill=s).save()
+						sk_letest = stblSkill.objects.last()
+						tbl_Entity_Skill = tblEntitySkill(SkillIDF=sk_letest,EntityIDF=latest_entity).save()
+
 
 		if data['CompanyName']:
 			# Head Count Type
@@ -490,23 +663,26 @@ class EntityDetailApi(APIView):
 			global latest_Company 
 			latest_Company = tblCompany.objects.last()
 
-		# # for Address
+		# # # for Address
+		if AddressType != None :
 
-		AType = tuple(map(int, data['AddressType'].split(',')))
-		Address = tuple(map(str, data['Address'].split(',')))
-		City = tuple(map(str, data['City'].split(',')))
-		District = tuple(map(str, data['District'].split(',')))
-		State = tuple(map(str, data['State'].split(',')))
-		Country = tuple(map(str, data['Country'].split(',')))
-		PinCode = tuple(map(int, data['PinCode'].split(',')))
-		for at,add,ct,dt,st,cn,pc in zip(AType,Address,City,District,State,Country,PinCode) :	
-			Atype = stblAddressType.objects.get(AddressTypeID=at)
-			Address = tblAddress(Address=add,City=ct,District=dt,State=st,Country=cn,PinCode=pc,AddressTypeIDF=Atype).save()
-			latest_Address = tblAddress.objects.last()
-			rtbl_entity_address = rtblEntityAddress(AddressIDF = latest_Address,EntityIDF=latest_entity).save() 
+			AType = tuple(map(int, data['AddressType'].split(',')))
+			Address = tuple(map(str, data['Address'].split(',')))
+			City = tuple(map(str, data['City'].split(',')))
+			District = tuple(map(str, data['District'].split(',')))
+			State = tuple(map(str, data['State'].split(',')))
+			Country = tuple(map(str, data['Country'].split(',')))
+			PinCode = tuple(map(int, data['PinCode'].split(',')))
+			for at,add,ct,dt,st,cn,pc in zip(AType,Address,City,District,State,Country,PinCode) :	
+				Atype = stblAddressType.objects.get(AddressTypeID=at)
+				Address = tblAddress(Address=add,City=ct,District=dt,State=st,Country=cn,PinCode=pc,AddressTypeIDF=Atype).save()
+				latest_Address = tblAddress.objects.last()
+				rtbl_entity_address = rtblEntityAddress(AddressIDF = latest_Address,EntityIDF=latest_entity).save() 
 
-		# # for rtbl entity
-		rtbl_entity = rtblEntity(AddressIDF=latest_Address,EntityTypeIDF=sbl_entity_type)
+		# # # for rtbl entity
+		rtbl_entity = rtblEntity(EntityTypeIDF=sbl_entity_type)
+		if AddressType != None:
+			rtbl_entity.AddressIDF=latest_Address
 		if data['FirstName']:	
 			rtbl_entity.PersonIDF=latest_person
 		if data['CompanyName']:	
@@ -518,13 +694,14 @@ class EntityDetailApi(APIView):
 
 					
 		# # for social media
-		Smedia = tuple(map(int, data['SocialMediaType'].split(',')))
-		Surl = tuple(map(str, data['url'].split(',')))
-		for sMedia,sUrl in zip(Smedia,Surl):
-			sbl_social_type = stblSocialMediaType.objects.get(SocialMediaTypeID=sMedia)
-			tbl_social = tblSocialMedia(url=sUrl,SocialMediaTypeIDF=sbl_social_type).save()
-			latest_social = tblSocialMedia.objects.last()
-			tbl_entity_social = tblEntitySocialMedia(EntityIDF=latest_entity,SocialMediaIDF=latest_social).save()
+		if SocialMediaType != None:
+			Smedia = tuple(map(int, data['SocialMediaType'].split(',')))
+			Surl = tuple(map(str, data['url'].split(',')))
+			for sMedia,sUrl in zip(Smedia,Surl):
+				sbl_social_type = stblSocialMediaType.objects.get(SocialMediaTypeID=sMedia)
+				tbl_social = tblSocialMedia(url=sUrl,SocialMediaTypeIDF=sbl_social_type).save()
+				latest_social = tblSocialMedia.objects.last()
+				tbl_entity_social = tblEntitySocialMedia(EntityIDF=latest_entity,SocialMediaIDF=latest_social).save()
 
 
 
@@ -561,6 +738,10 @@ class StaticDataApi(ObjectMultipleModelAPIView):
 		{'queryset':stblIndustryType.objects.all(),'serializer_class':stblIndustryTypeSerializer, 'label': 'Industry_Type'},
 		{'queryset':stblSuffixType.objects.all(),'serializer_class':stblSuffixTypeSerializer, 'label': 'Suffix_Type'},
 		{'queryset':stblPersonType.objects.all(),'serializer_class':stblPersonTypeSerializer, 'label': 'Person_Type'},
+	 
+		{'queryset':stblStatus.objects.all(),'serializer_class':stblStatusSerializer, 'label': 'Status'},
+		{'queryset':stblSkill.objects.all(),'serializer_class':stblSkillSerializer, 'label': 'Skill'},
+
 	 ]
 	 
 
@@ -675,9 +856,27 @@ class tblEntitySocialMediaViewSet(viewsets.ModelViewSet):
 	queryset = tblEntitySocialMedia.objects.all()
 	serializer_class = tblEntitySocialMediaSerializer	
 
+# class tblDocumentViewSet(viewsets.ModelViewSet):
+# 	queryset = tblDocument.objects.all()
+# 	serializer_class = tblDocumentSerializer					
+
+class stblStatusViewSet(viewsets.ModelViewSet):
+	queryset = stblStatus.objects.all()
+	serializer_class = stblStatusSerializer
+
+
+
+class stblSkillViewSet(viewsets.ModelViewSet):
+	queryset = stblSkill.objects.all()
+	serializer_class = stblSkillSerializer
+
+class tblEntitySkillViewSet(viewsets.ModelViewSet):
+	queryset = tblEntitySkill.objects.all()
+	serializer_class = tblEntitySkillSerializer	
+
 class stblPersonTypeViewSet(viewsets.ModelViewSet):
 	queryset = stblPersonType.objects.all()
-	serializer_class = stblPersonTypeSerializer					
+	serializer_class = stblPersonTypeSerializer		
 
 class tblPersonViewSet(viewsets.ModelViewSet):
 	queryset = tblPerson.objects.all()

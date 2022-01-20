@@ -57,7 +57,11 @@ router.register('tblCompany',views.tblCompanyViewSet,basename='tblCompany'),
 router.register('tblEntityPhone',views.tblEntityPhoneViewSet,basename='tblEntityPhone'),
 router.register('rtblEntityEmail',views.rtblEntityEmailViewSet,basename='rtblEntityEmail'),
 router.register('rtblEntity',views.rtblEntityViewSet,basename='rtblEntity')
-# router.register('EntitySearchApi',views.EntitySearchApi,basename='EntitySearchApi')
+# router.register('tblDocument',views.tblDocumentViewSet,basename='tblDocument')
+router.register('stblStatus',views.stblStatusViewSet,basename='stblStatus')
+# router.register('tblEntityCallDetails',views.tblEntityCallDetailsViewSet,basename='tblEntityCallDetails')
+router.register('stblSkill',views.stblSkillViewSet,basename='stblSkill')
+router.register('tblEntitySkill',views.tblEntitySkillViewSet,basename='tblEntitySkill')
 
 
 
@@ -68,6 +72,9 @@ urlpatterns = [
     path('api/EntityDetailApi/<int:pk>',views.EDetailApi.as_view(),name="EDetailApi"),
     path('api/StaticDataApi',views.StaticDataApi.as_view(),name="StaticDataApi"),
     path('api/EntitySearchApi/',views.EntitySearchApi.as_view(),name="EntitySearchApi"),
+    path('api/tblEntityCallDetails',views.tblEntityCallDetailsViewSet.as_view(),name="tblEntityCallDetails"),
+    path('api/tblEntityCallDetails/<int:pk>',views.CallDetailsViewSet.as_view(),name="tblEntityCallDetails"),
+    path('api/tblDocument/<int:pk>',views.tblDocumentViewSet.as_view(),name="tblDocument"),
 
     # path('api/PersonApi',views.PersonApi.as_view(),name="PersonApi"),
 

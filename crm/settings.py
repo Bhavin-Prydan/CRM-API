@@ -169,9 +169,9 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
-DATETIME_FORMAT = '%d-%m-%Y'
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
@@ -192,9 +192,9 @@ MEDIA_ROOT=os.path.join(BASE_DIR,'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 SIMPLE_JWT = {
-'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-# 'REFRESH_TOKEN_LIFETIME': timedelta(seconds=2400)
-'REFRESH_TOKEN_LIFETIME': timedelta(days=2)
+'ACCESS_TOKEN_LIFETIME': timedelta(seconds=1800),
+'REFRESH_TOKEN_LIFETIME': timedelta(seconds=2400)
+# 'REFRESH_TOKEN_LIFETIME': timedelta(days=2)
 }
 
 JAZZMIN_SETTINGS = {

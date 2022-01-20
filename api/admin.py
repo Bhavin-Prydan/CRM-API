@@ -1,7 +1,28 @@
 from django.contrib import admin
-from .models import stblCountryCodeType,stblPhoneType,tblCountryCode,tblPhone,stblEntityType,tblEntity,stblAddressType,tblAddress,stblHeadCountType,tblHeadCount,stblEmailType,tblEmail,stblPhotoType,tblPhoto,stblSocialMediaType,tblSocialMedia,stblCompanyType,stblIndustryType,stblSuffixType,stblSocialMediaType,tblSocialMedia,stblCompanyType,stblIndustryType,stblSuffixType,tblEntitySocialMedia,stblPersonType,tblPerson,tblCompany,tblEntityPhone,rtblEntityEmail,rtblEntity
+from .models import stblCountryCodeType,stblPhoneType,tblCountryCode,tblPhone,stblEntityType,tblEntity,stblAddressType,tblAddress,stblHeadCountType,tblHeadCount,stblEmailType,tblEmail,stblPhotoType,tblPhoto,stblSocialMediaType,tblSocialMedia,stblCompanyType,stblIndustryType,stblSuffixType,stblSocialMediaType,tblSocialMedia,stblCompanyType,stblIndustryType,stblSuffixType,tblEntitySocialMedia,stblPersonType,tblPerson,tblCompany,tblEntityPhone,rtblEntityEmail,rtblEntity,tblDocument,stblStatus,tblEntityCallDetails,stblSkill,tblEntitySkill
 
 # Register your models here.
+
+@admin.register(tblDocument)
+class tblDocumentAdmin(admin.ModelAdmin):
+	list_display = ['DocumentID','Document','EntityIDF']
+
+@admin.register(stblStatus)
+class stblStatusAdmin(admin.ModelAdmin):
+	list_display = ['StatusID','Status']
+
+@admin.register(tblEntityCallDetails)
+class tblEntityCallDetailsAdmin(admin.ModelAdmin):
+	list_display = ['EntityCallDetailsID','AboutCall','Date','CreatedAT','CreatedBY','StatusIDF','EntityIDF']		
+
+@admin.register(stblSkill)
+class stblSkillAdmin(admin.ModelAdmin):
+	list_display = ['SkillID','Skill']
+
+@admin.register(tblEntitySkill)
+class tblEntitySkillAdmin(admin.ModelAdmin):
+	list_display = ['EntitySkillID','SkillIDF','EntityIDF']
+
 
 @admin.register(stblCountryCodeType)
 class stblCountryCodeTypeAdmin(admin.ModelAdmin):
@@ -111,7 +132,7 @@ class stblPersonTypeAdmin(admin.ModelAdmin):
 
 @admin.register(tblPerson)
 class tblPersonAdmin(admin.ModelAdmin):
-	list_display = ['PersonID','FirstName','MiddleName','LastName','Gender','DOB','SuffixIDF','EntityIDF','PersonTypeIDF']
+	list_display = ['PersonID','FirstName','MiddleName','Gender','DOB','SuffixIDF','EntityIDF','PersonTypeIDF','Experiance','StatusIDF']
 
 
 @admin.register(tblCompany)

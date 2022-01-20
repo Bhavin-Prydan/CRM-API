@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import stblCountryCodeType,stblPhoneType,tblCountryCode,tblPhone,stblEntityType,tblEntity,stblAddressType,tblAddress,stblHeadCountType,tblHeadCount,stblEmailType,tblEmail,stblPhotoType,tblPhoto,stblSocialMediaType,tblSocialMedia,stblCompanyType,stblIndustryType,stblSuffixType,tblEntitySocialMedia,stblPersonType,tblPerson,tblCompany,tblEntityPhone,rtblEntityEmail,rtblEntity,rtblEntityAddress
+from .models import stblCountryCodeType,stblPhoneType,tblCountryCode,tblPhone,stblEntityType,tblEntity,stblAddressType,tblAddress,stblHeadCountType,tblHeadCount,stblEmailType,tblEmail,stblPhotoType,tblPhoto,stblSocialMediaType,tblSocialMedia,stblCompanyType,stblIndustryType,stblSuffixType,tblEntitySocialMedia,stblPersonType,tblPerson,tblCompany,tblEntityPhone,rtblEntityEmail,rtblEntity,rtblEntityAddress,tblDocument,stblStatus,tblEntityCallDetails,stblSkill,tblEntitySkill
 from django.conf import settings
 from drf_writable_nested.serializers import WritableNestedModelSerializer
 
@@ -11,51 +11,51 @@ import base64
 
 
 class Base64ImageField(serializers.ImageField):
-    def to_internal_value(self, data):
-        from django.core.files.base import ContentFile
-        import base64
-        import six
-        import uuid
-        print("ininternal")
-        # Check if this is a base64 string
-        if isinstance(data, six.string_types):
-            # Check if the base64 string is in the "data:" format
-            print("ininstance")
-            if 'data:' in data and ';base64,' in data:
-                # Break out the header from the base64 content
-                header, data = data.split(';base64,')
+	def to_internal_value(self, data):
+		from django.core.files.base import ContentFile
+		import base64
+		import six
+		import uuid
+		print("ininternal")
+		# Check if this is a base64 string
+		if isinstance(data, six.string_types):
+			# Check if the base64 string is in the "data:" format
+			print("ininstance")
+			if 'data:' in data and ';base64,' in data:
+				# Break out the header from the base64 content
+				header, data = data.split(';base64,')
 
-            # Try to decode the file. Return validation error if it fails.
-            try:
-                decoded_file = base64.b64decode(data)
-            except TypeError:
-                self.fail('invalid_image')
+			# Try to decode the file. Return validation error if it fails.
+			try:
+				decoded_file = base64.b64decode(data)
+			except TypeError:
+				self.fail('invalid_image')
 
-            # Generate file name:
-            file_name = str(uuid.uuid4())[:12] # 12 characters are more than enough.
-            # Get the file name extension:
-            file_extension = self.get_file_extension(file_name, decoded_file)
+			# Generate file name:
+			file_name = str(uuid.uuid4())[:12] # 12 characters are more than enough.
+			# Get the file name extension:
+			file_extension = self.get_file_extension(file_name, decoded_file)
 
-            complete_file_name = "%s.%s" % (file_name, file_extension, )
+			complete_file_name = "%s.%s" % (file_name, file_extension, )
 
-            data = ContentFile(decoded_file, name=complete_file_name)
+			data = ContentFile(decoded_file, name=complete_file_name)
 
-        return super(Base64ImageField, self).to_internal_value(data)
+		return super(Base64ImageField, self).to_internal_value(data)
 
-    def get_file_extension(self, file_name, decoded_file):
-        import imghdr
+	def get_file_extension(self, file_name, decoded_file):
+		import imghdr
 
-        extension = imghdr.what(file_name, decoded_file)
-        extension = "jpg" if extension == "jpeg" else extension
+		extension = imghdr.what(file_name, decoded_file)
+		extension = "jpg" if extension == "jpeg" else extension
 
-        return extension
+		return extension
 
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id','first_name','last_name','username', 'email']
+	class Meta:
+		model = User
+		fields = ['id','first_name','last_name','username', 'email']
 
 class stblPhoneTypeSerializer(serializers.ModelSerializer):
 	class Meta:
@@ -139,10 +139,15 @@ class stblPhotoTypeSerializer(serializers.ModelSerializer):
 
 class tblPhotoSerializer(serializers.ModelSerializer):
 	PhotoTypeIDF = stblPhotoTypeSerializer()
-	Photo = Base64ImageField(max_length=None, use_url=True, allow_null= True)
+	Photo = serializers.SerializerMethodField()
 	class Meta:
 		model = tblPhoto
 		fields = '__all__'	
+
+	def get_Photo(self, tblPhoto):
+		request = self.context.get('request')
+		Photo_url = tblPhoto.Photo.url
+		return request.build_absolute_uri(Photo_url)	
 
 
 class stblSocialMediaTypeSerializer(serializers.ModelSerializer):
@@ -218,13 +223,50 @@ class rtblEntityAddressSerializer(serializers.ModelSerializer):
 		model = rtblEntityAddress
 		fields = '__all__'	
 
+class tblDocumentSerializer(serializers.ModelSerializer):
+	EntityIDF = tblEntitySerializer(read_only=False)
+	# Document = serializers.FileField(upload_to ='Documents',use_url=True)
+	Document =  serializers.SerializerMethodField()
+	class Meta:
+		model = tblDocument
+		fields = '__all__'	
+		
+	def get_Document(self, tblDocument):
+		request = self.context.get('request')
+		Doc_url = tblDocument.Document.url
+		return request.build_absolute_uri(Doc_url)
+
+class stblStatusSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = stblStatus
+		fields = '__all__'			
+
+class tblEntityCallDetailsSerializer(serializers.ModelSerializer):
+	EntityIDF = tblEntitySerializer(read_only=False)
+	StatusIDF = stblStatusSerializer()
+	CreatedBY  = UserSerializer()
+	class Meta:
+		model = tblEntityCallDetails
+		fields = '__all__'					
+
+class stblSkillSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = stblSkill
+		fields = '__all__'
+
+class tblEntitySkillSerializer(serializers.ModelSerializer):
+	EntityIDF = tblEntitySerializer(read_only=False)
+	SkillIDF = stblSkillSerializer()
+	class Meta:
+		model = tblEntitySkill
+		fields = '__all__'					
+
 class tblPersonSerializer(WritableNestedModelSerializer):
 	SuffixIDF = stblSuffixTypeSerializer(read_only=False) 
 	EntityIDF = tblEntitySerializer(read_only=False)
 	PersonTypeIDF = stblPersonTypeSerializer(read_only=False)
-	# PhoneIDF = tblPhoneSerializer(read_only=False)
-	# EmailIDF = tblEmailSerializer(read_only=False)
-
+	StatusIDF = stblStatusSerializer()
+	UpdatedBy = UserSerializer()
 	class Meta:
 		model = tblPerson
 		fields = '__all__'	
